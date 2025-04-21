@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红色警戒助手</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button.view-all {
+            background-color: #2196F3;
+            display: block;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        button.view-all:hover {
+            background-color: #0b7dda;
+        }
+        
+        .results {
+            background-color: white;
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .result-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .question {
+            font-weight: bold;
+            color: #2196F3;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+        
+        .answer {
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.5;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .answer.expanded {
+            max-height: 500px;
+        }
+        
+        .groups {
+            margin-top: 30px;
+            background-color: white;
+            border-radius: 4px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .group-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .group-item:last-child {
+            border-bottom: none;
+        }
+        
+        .group-name {
+            font-weight: bold;
+        }
+        
+        .group-status {
+            color: #888;
+        }
+        
+        .resources {
+            margin-top: 20px;
+        }
+        
+        .resource-link {
+            display: block;
+            margin-bottom: 10px;
+            color: #2196F3;
+            text-decoration: none;
+        }
+        
+        .resource-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>红色警戒助手</h1>
+    
+    <div class="search-container">
+        <input type="text" id="question" placeholder="请输入您的问题...">
+        <button onclick="search()">搜索</button>
+    </div>
+    
+    <button class="view-all" onclick="viewAllFaq()">查看所有解决方法</button>
+    
+    <div class="results" id="results">
+        <!-- 搜索一个功能将在这里显示 -->
+    </div>
+    
+    <div class="groups">
+        <h2>官方QQ交流群</h2>
+        <div id="group-list">
+            <!-- 群组信息将在这里显示 -->
+        </div>
+    </div>
+    
+    <div class="resources">
+        <h2>其他资源</h2>
+        <a href="https://help.yra2.com/faq" class="resource-link" target="_blank">问题解决文档</a>
+        <a href="https://www.yra2.com/sponsor/" class="resource-link" target="_blank">赞助支持</a>
+        <a href="https://www.yra2.com/group" class="resource-link" target="_blank">更多群聊</a>
+        <a href="https://rime.im/" class="resource-link" target="_blank">小狼毫输入法</a>
+    </div>
+    
+    <script>
+        // 代入FAQ数据
+        var faqData = [
+            {
+                'question': '安装文件损坏或无法创建',
+                'answer': '安装文件损坏将所有杀毒软件关闭，尤其是360、腾讯电脑管家、迈克菲(Mcfee)、联想电脑管家等杀毒软件。如果仍无法解决就重新下载，可能安装包已经被破坏。',
+                'keywords': ['安装', '损坏'],
+                'category': '安装问题',
+                'subcategory': '安装问题'
+            },
+            {
+                'question': '我怎么启动游戏，找不到入口',
+                'answer': '如果桌面上没有游戏快捷方式的话，游戏入口在安装文件夹里的 Reunion.exe 或 Reunion 2023.exe',
+                'keywords': ['启动', '游戏'],
+                'category': '安装问题',
+                'subcategory': '安装问题'
+            },
+            {
+                'question': 'Win7 系统启动没有反应',
+                'answer': '如果你确实没搞错文件，那就下载并安装 Windows6.1-KB2670838 系统补丁：x64-windows6.1-kb2670838-x64.msux/x86-windows6.1-kb2670838-x86.msu',
+                'keywords': ['无反应'],
+                'category': '安装问题',
+                'subcategory': '安装问题'
+            },
+            {
+                'question': '弹窗：You must install .NET Desktop Runtime......',
+                'answer': '安装.NET7(x86)运行库, 下载地址:https://alist.yra2.com/.NET7/x86/windowsdesktop-runtime-7.0.20-win-x86.exe    ,(如果Architecture部分提示的是x64或其他架构, 请根据实际情况安装对应架构的运行库[1.5版本已更换.NET6])',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '弹窗：无法启动此程序，因为计算机中丢失 api-ms-win-crt-runtime-|1-1-0.dll...',
+                'answer': '需要安装 VC++2015-2022 运行库，或者你那里有 VC++2015-2019 也是可以的,VC++2015-2022下载地址: https://alist.yra2.com/VC++2015-2022',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '弹窗：Main Client Library *** not found！',
+                'answer': '不要把主程序直接拖到桌面上运行，你应该创建快捷方式。如果你觉得你做的没有问题，仍然出现此错误，请重新安装',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '弹窗：若要运行此应用程序，您必须首先安装 .NET Framework v4.0.30319...',
+                'answer': '.NET4.0 下载地址：https://alist.yra2.com/.NET4/dotNetFx40_Full_x86_x64.exe',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '弹窗：Could not load executable',
+                'answer': '关闭杀毒软件',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '弹窗：停止工作',
+                'answer': '尝试清理缓存或者管理员身份运行',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '弹窗：FATAL……',
+                'answer': '管理员模式运行',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '弹窗问题'
+            },
+            {
+                'question': '多次提示使用新的名字, 例如: 您的名字已被占用，重试为Player_',
+                'answer': '请在客户端设置—游戏—玩家名称更改（因为怕字库缺失，所以不支持中文名称）',
+                'keywords': ['重复名称'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '联机大厅连接到CnCNet但无法创建房间',
+                'answer': '如果您是1.4.20版本，请查看Lobby servers行，如果后面显示的是0 fast，则证明连接失败(因为客户端没有找到在可接受延迟内的IRC服务器)，需要您多次重试连接或尝试更换网络(1.5版本已更换为自建服务器，并解决这个问题)',
+                'keywords': ['无法创建'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '进入联机大厅提示: AUTO Your IP address has been listed at DroneBL?',
+                'answer': '如果是家庭带宽，重启路由器更换一个IP地址即可(不要再傻fufu的用客户端提供的链接去解封了，基本解不了，能解也算你运气好而已，DroneBL一般不搭理你的)，至于为什么会被封，在中国境内，如果你不是独立IP，那么一个IPv4就是几个人同时在用，你完全不能保证任何正在使用或者曾经使用过的人拿着这个IP干坏事',
+                'keywords': ['重复IP'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '为什么进入联机大厅会提示: Too many unknown connections form your IP?',
+                'answer': '该问题对于1.5.0以上版本较为常见。众所周知，中国境内本身就是一个大型NAT网络，一群人共用同一个IPv4，就比较容易出现这种问题，可以等待15分钟左右再试，若仍无法解决请联系制作组获取帮助',
+                'keywords': ['共用IP'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '进入联机大厅报错提示: The connection speed is too fast?',
+                'answer': '该问题通常发生在1.5.0以上版本，但触发概率极低。如果遇到此问题请稍等5-10秒左右再重新连接联机大厅',
+                'keywords': ['重新连接'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '局域网大厅报错创建Socket连接失败?',
+                'answer': '请重启电脑后重新连接局域网大厅',
+                'keywords': ['报错'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '局域网游玩时弹窗报错？',
+                'answer': '游戏过程中弹窗，清理缓存重试，等后续版本优化',
+                'keywords': ['弹窗报错'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '创建局域网Socket失败！',
+                'answer': '重启电脑',
+                'keywords': ['失败'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '进入联机大厅出现闪退',
+                'answer': '重启电脑',
+                'keywords': ['闪退'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '进入联机大厅显示ERROR:Closing Linlk……',
+                'answer': '如果你的网络DNS不是自动的，请反馈给群管理（运营组-Shiroko）',
+                'keywords': ['网络'],
+                'category': '启动问题',
+                'subcategory': '联机问题'
+            },
+            {
+                'question': '开始游戏立马弹回客户端',
+                'answer': '关闭你的杀毒软件，如果还不行,重启电脑',
+                'keywords': ['闪退'],
+                'category': '开始异常',
+                'subcategory': '出现问题'
+            },
+            {
+                'question': '开始后游戏直接黑屏没有反应',
+                'answer': '如果你确定不是2人图放了三个人的话, 可以尝试不要使用随机位置, 或者换图, 还不行就去设置-游戏里清理游戏缓存重试',
+                'keywords': ['黑屏'],
+                'category': '开始异常',
+                'subcategory': '出现问题'
+            },
+            {
+                'question': '打完了一直黑屏出不来',
+                'answer': '如果您的系统是Windows11，24H2, 这是因为微软改了系统内核所致(且该版本目前由微软印度维护)。目前已在1.5版本中修复(打开客户端设置里的多核心运行), 群文件有安装包(还在持续测试中，不公开下载), 使用前记得关闭杀毒软件(360、腾讯电脑管家等)安装。',
+                'keywords': ['黑屏'],
+                'category': '开始异常',
+                'subcategory': '出现问题'
+            },
+            {
+                'question': '弹窗：.NET Host 已停止工作',
+                'answer': '在客户端设置中将渲染补丁更改成默认',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '开始异常'
+            },
+            {
+                'question': '弹窗：出现错误：System.UnauthorizedAccessException',
+                'answer': '请检查是否开启了杀毒软件, 并尝试清理缓存(这个问题可能是杀毒拦截所致)，临时解决办法：顺着路径找到这个文件，右键属性，换到常规页面，文件的只读属性去掉',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '开始异常'
+            },
+            {
+                'question': '弹窗：Could not run executable',
+                'answer': '退出客户端并重新以管理员模式运行',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '开始异常'
+            },
+            {
+                'question': '弹窗：CnCMaps已停止工作',
+                'answer': '这个报错是因为地图高清预览图渲染出错导致，忽略即可，不影响游戏(如果想要解决可以在客户端设置里关闭)',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '开始异常'
+            },
+            {
+                'question': '弹窗：Unable to initialize',
+                'answer': '换个游戏目录重新安装, 大概率是因为安装路径太长，或者某个文件夹名称太长',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '开始异常'
+            },
+            {
+                'question': '弹窗：系统策略禁止这个安装，请与系统管理员联系',
+                'answer': '打开gpedit.msc—计算机配置—管理模板—Windows组件—windows installer,关闭Windows Installer"设置为"已禁用"，然后点应用，确定',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '开始异常'
+            },
+            {
+                'question': '进入游戏后按ESC会卡住?',
+                'answer': '如果是1.4.20版本, 请尝试关闭杀毒或使用官网的ddraw修复脚本修复, 如果是Win11,24H2必须使用1.5测试版本',
+                'keywords': ['卡住'],
+                'category': '游戏问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '感觉视野不合适，太大/太小',
+                'answer': '在客户端设置里适当降低游戏分辨率，分辨率越高视野越大, 物件越小,官方建议游戏分辨率最大不超过2560*1440, 客户端分辨率最大不超过4096*2160',
+                'keywords': ['视野'],
+                'category': '游戏问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '屏幕滑动太快\太慢',
+                'answer': '客户端设置点击：游戏—屏幕滑动速度，根于个人喜好设置滑动速度（建议速度3）',
+                'keywords': ['滑动'],
+                'category': '游戏问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '怎么不能按Shift连点了？',
+                'answer': '任务使用名称末尾带+的模组即可。如果默认是第三方模组请不要随意更改(可能会导致任务包运行异常)',
+                'keywords': ['连点'],
+                'category': '游戏问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '为什么无法攻击敌人？敌人也不攻击我  /我想1打7应该怎么设置？',
+                'answer': '小队为相同字母的为一队，‘-’代表自成一队。',
+                'keywords': ['无法'],
+                'category': '游戏问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '弹窗：需要使用新应用以打开此ms-gamingoverlay链接?',
+                'answer': '此问题通常只会在Win10 1903及更高的系统中出现, 是因为系统缺少Xbox Game Bar组件导致, 点击此连接可跳转至Microsoft Store安装：https://apps.microsoft.com/detail/9nzkpstsnw4p?hl=zh-cn&gl=CN   ，若您的Win10/11系统缺少Xbox Game Bar组件导致, 可以点此下载appx独立安装包进行安装：https://archive.ru2023.top/win/xbox/Microsoft.XboxGamingOverlay_7.225.2131.0_neutral_~_8wekyb3d8bbwe.AppxBundle   ，如果你实在不想安装的话直接禁用掉也可以。',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '弹窗：本产品需要16位原色盘',
+                'answer': '游戏客户端设置cnc-ddraw即可',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '弹窗：Exception Processing……',
+                'answer': '打开客户端设置点游戏，关闭后台渲染即可',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '弹窗：意外的致命错误……',
+                'answer': '重启电脑试试，并尝试管理员身份运行',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '弹窗：Fatal Error',
+                'answer': '关闭一些功能即可，功能开的越多，弹窗几率越大',
+                'keywords': ['弹窗'],
+                'category': '弹窗问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '声明',
+                'answer': '！！！开修改大师造成的游戏弹窗开发组一律不负责！！！',
+                'keywords': ['报错'],
+                'category': '其他内容',
+                'subcategory': '其他'
+            },
+            {
+                'question': '开始游戏出现黑屏、无反应…',
+                'answer': '客户端设置启用多核运行',
+                'keywords': ['黑屏'],
+                'category': 'w11问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '使用拼音输入法闪退、死机问题',
+                'answer': '这是微软的一个屎山问题，因此我们找到了解决方法（此问题影响大部分Win11版本)，可以使用小狼毫输入法（网址：https://rime.im/   ）具体："见输入法"',
+                'keywords': ['黑屏'],
+                'category': 'w11问题',
+                'subcategory': '游戏问题'
+            },
+            {
+                'question': '输入法',
+                'answer': '小狼毫输入法网址：https://rime.im/   ，安装教程引用小狼毫官网：https://www.cnblogs.com/HookDing/p/17949199   ，雾凇字库文件网址：https://github.com/iDvel/rime-ice/releases/tag/nightly',
+                'keywords': [],
+                'category': '其他内容',
+                'subcategory': '其他'
+            },
+            {
+                'question': '赞助支持',
+                'answer': '赞助支持：https://www.yra2.com/sponsor/',
+                'keywords': ['赞助支持'],
+                'category': '其他内容',
+                'subcategory': '其他'
+            },
+            {
+                'question': '更多内容',
+                'answer': '更多内容见文档：https://help.yra2.com/faq',
+                'keywords': ['文档'],
+                'category': '其他内容',
+                'subcategory': '其他'
+            },
+            {
+                'question': '安全中心关闭方法',
+                'answer': '请关闭所有安全中心和杀毒软件，尤其是360、腾讯电脑管家、迈克菲(Mcfee)、联想电脑管家等。',
+                'keywords': ['关杀毒'],
+                'category': '其他内容',
+                'subcategory': '其他'
+            },
+        ];
+        
+        // 代入群组数据
+        var groupNumbers = [
+            {"name": "QQ交流1群", "number": "363035291", "status": "已满"},
+            {"name": "QQ交流2群", "number": "561178527", "status": "已满"},
+            {"name": "QQ交流3群", "number": "185228408", "status": "已满"},
+            {"name": "QQ交流4群", "number": "342784372", "status": "已满"},
+            {"name": "QQ交流5群", "number": "342759792", "status": "可用"},
+            {"name": "QQ交流6群", "number": "157382537", "status": "可用"},
+            {"name": "QQ交流7群", "number": "194533292", "status": "可用"},
+            {"name": "QQ交流8群", "number": "342091822", "status": "可用"},
+            {"name": "QQ交流9群", "number": "955215881", "status": "可用"},
+            {"name": "QQ交流10群", "number": "759895622", "status": "可用"},
+        ];
+        
+        function renderGroups() {
+            var groupList = document.getElementById('group-list');
+            groupList.innerHTML = '';
+            
+            for (var i = 0; i < groupNumbers.length; i++) {
+                var group = groupNumbers[i];
+                var groupItem = document.createElement('div');
+                groupItem.className = 'group-item';
+                groupItem.innerHTML = '<span class="group-name">' + group.name + '：' + group.number + '</span><span class="group-status">' + group.status + '</span>';
+                groupList.appendChild(groupItem);
+            }
+        }
+        
+        function toggleAnswer(element) {
+            var answer = element.nextElementSibling;
+            if (answer.classList.contains('expanded')) {
+                answer.classList.remove('expanded');
+            } else {
+                var expandedAnswers = document.querySelectorAll('.answer.expanded');
+                expandedAnswers.forEach(function(expandedAnswer) {
+                    expandedAnswer.classList.remove('expanded');
+                });
+                answer.classList.add('expanded');
+            }
+        }
+        
+        function renderResults(results) {
+            var resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+            
+            for (var i = 0; i < results.length; i++) {
+                var faq = results[i];
+                var resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                
+                resultItem.innerHTML = '<div class="question" onclick="toggleAnswer(this)">' + faq.question + '</div>' +
+                                      '<div class="answer">' + faq.answer + '</div>';
+                
+                resultsContainer.appendChild(resultItem);
+            }
+        }
+        
+        function search() {
+            var question = document.getElementById('question').value.trim();
+            if (!question) return;
+            
+            var searchResults = [];
+            for (var i = 0; i < faqData.length; i++) {
+                var faq = faqData[i];
+                if (faq.question.toLowerCase().indexOf(question.toLowerCase()) !== -1 || 
+                    faq.answer.toLowerCase().indexOf(question.toLowerCase()) !== -1) {
+                    searchResults.push(faq);
+                }
+            }
+            
+            renderResults(searchResults);
+        }
+        
+        function viewAllFaq() {
+            renderResults(faqData);
+        }
+        
+        window.onload = function() {
+            renderGroups();
+        };
+    </script>
+</body>
+</html>
